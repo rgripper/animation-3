@@ -498,7 +498,7 @@ export default function SkeletonViewer() {
       cancelAnimationFrame(pixelAnimId);
       pixelRenderer.dispose();
     };
-  }, [showPixelView]);
+  }, [showPixelView, currentAnimation]);
 
   // Toggle visibility between skeleton and skin
   useEffect(() => {
