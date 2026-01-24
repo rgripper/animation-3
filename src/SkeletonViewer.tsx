@@ -411,8 +411,24 @@ export default function SkeletonViewer() {
     }
     animate();
 
+    // Handle resize
+    const handleResize = () => {
+      const width = mount.clientWidth;
+      const height = mount.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    };
+    window.addEventListener("resize", handleResize);
+
+    // Also observe container size changes
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(mount);
+
     return () => {
       cancelAnimationFrame(animationId);
+      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
       mount.removeChild(renderer.domElement);
       renderer.dispose();
     };
@@ -491,119 +507,78 @@ export default function SkeletonViewer() {
   }, [showSkin]);
 
   return (
-    <div className="w-full h-screen flex flex-col bg-gray-900 text-white">
-      <div className="p-4 bg-gray-800 border-b border-gray-700">
-        <h1 className="text-2xl font-bold mb-2">
-          Pixel Art Character Pipeline - Step 1
-        </h1>
-        <p className="text-gray-400">3D skeleton with sample animation data</p>
-      </div>
+    <div className="w-full h-screen relative bg-gray-900 text-white overflow-hidden">
+      {/* Main 3D canvas - takes full screen */}
+      <div ref={mountRef} style={{ width: "100vw", height: "100vh" }} />
 
-      <div className="flex-1 flex">
-        <div ref={mountRef} className="flex-1" />
+      {/* Pixel view - top right overlay */}
+      {showPixelView && (
+        <div className="absolute top-4 right-4 z-10 bg-gray-950/90 p-2 rounded border border-gray-700">
+          <h3 className="text-xs font-bold mb-1 text-center">2D Pixel</h3>
+          <canvas
+            ref={canvasRef}
+            width={64}
+            height={64}
+            className="border border-gray-600"
+            style={{
+              imageRendering: "pixelated",
+              width: "128px",
+              height: "128px",
+            }}
+          />
+        </div>
+      )}
 
-        {showPixelView && (
-          <div className="bg-gray-950 p-4 flex items-center justify-center border-l border-gray-700">
-            <div className="text-center">
-              <h3 className="text-sm font-bold mb-2">2D Pixel Projection</h3>
-              <canvas
-                ref={canvasRef}
-                width={64}
-                height={64}
-                className="border-2 border-gray-600"
-                style={{
-                  imageRendering: "pixelated",
-                  width: "256px",
-                  height: "256px",
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="w-64 bg-gray-800 p-3 overflow-y-auto border-l border-gray-700">
-          <div className="space-y-4">
-            <div className="bg-gray-700 rounded p-3">
-              <h3 className="font-bold mb-3">Animation</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    setCurrentAnimation("Walk");
-                    animationTimeRef.current = 0;
-                  }}
-                  className={`w-full px-3 py-2 rounded text-sm transition ${
-                    currentAnimation === "Walk"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-600 hover:bg-gray-500"
-                  }`}
-                >
-                  Walk Cycle ({WALK_ANIMATION.frames.length} frames)
-                </button>
-                <button
-                  onClick={() => {
-                    setCurrentAnimation("Idle");
-                    animationTimeRef.current = 0;
-                  }}
-                  className={`w-full px-3 py-2 rounded text-sm transition ${
-                    currentAnimation === "Idle"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-600 hover:bg-gray-500"
-                  }`}
-                >
-                  Idle ({IDLE_ANIMATION.frames.length} frames)
-                </button>
-              </div>
-              <div className="mt-3 text-sm text-gray-300">
-                Current frame: {currentFrame}
-              </div>
-            </div>
-
-            <div className="bg-gray-700 rounded p-3">
-              <h3 className="font-bold mb-3">View Options</h3>
-              <label className="flex items-center space-x-2 cursor-pointer mb-2">
-                <input
-                  type="checkbox"
-                  checked={showSkin}
-                  onChange={(e) => setShowSkin(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <span className="text-sm">Show Skin</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showPixelView}
-                  onChange={(e) => setShowPixelView(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <span className="text-sm">Show 2D Pixel Projection</span>
-              </label>
-            </div>
-
-            <div className="bg-gray-700 rounded p-3">
-              <h3 className="font-bold mb-2">Skeleton Info</h3>
-              <p className="text-sm text-gray-300">
-                Bones: {SAMPLE_SKELETON.bones.length}
-              </p>
-              <p className="text-sm text-gray-300 mt-1">Structure:</p>
-              <ul className="text-xs text-gray-400 mt-2 space-y-1 font-mono">
-                <li>• Root → Spine → Chest → Neck → Head</li>
-                <li>• Arms: Shoulder → Upper → Forearm → Hand</li>
-                <li>• Legs: Hip → Thigh → Shin → Foot</li>
-              </ul>
-            </div>
-
-            <div className="bg-blue-900 border border-blue-700 rounded p-3 text-sm">
-              <p className="font-bold mb-2">✓ Step 1 Complete</p>
-              <p className="text-gray-300 mb-2">
-                We have a working 3D skeleton with animation data.
-              </p>
-              <p className="text-gray-400 text-xs">
-                Next: Enable pixel projection to see the 2D conversion, then
-                we'll add skinning and equipment layers.
-              </p>
-            </div>
-          </div>
+      {/* Controls - bottom left overlay */}
+      <div className="absolute bottom-4 left-4 z-10 bg-gray-800/90 p-3 rounded border border-gray-700 space-y-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setCurrentAnimation("Walk");
+              animationTimeRef.current = 0;
+            }}
+            className={`px-3 py-1 rounded text-sm ${
+              currentAnimation === "Walk"
+                ? "bg-blue-600"
+                : "bg-gray-600 hover:bg-gray-500"
+            }`}
+          >
+            Walk
+          </button>
+          <button
+            onClick={() => {
+              setCurrentAnimation("Idle");
+              animationTimeRef.current = 0;
+            }}
+            className={`px-3 py-1 rounded text-sm ${
+              currentAnimation === "Idle"
+                ? "bg-blue-600"
+                : "bg-gray-600 hover:bg-gray-500"
+            }`}
+          >
+            Idle
+          </button>
+          <span className="text-xs text-gray-400 self-center ml-2">
+            Frame: {currentFrame}
+          </span>
+        </div>
+        <div className="flex gap-4 text-sm">
+          <label className="flex items-center gap-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showSkin}
+              onChange={(e) => setShowSkin(e.target.checked)}
+            />
+            Skin
+          </label>
+          <label className="flex items-center gap-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showPixelView}
+              onChange={(e) => setShowPixelView(e.target.checked)}
+            />
+            Pixel View
+          </label>
         </div>
       </div>
     </div>
