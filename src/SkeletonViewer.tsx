@@ -16,6 +16,94 @@ interface Animation {
   frames: AnimationFrame[];
 }
 
+interface BodyPartConfig {
+  type: "sphere" | "capsule" | "box";
+  size: [number] | [number, number] | [number, number, number];
+  offset?: [number, number, number];
+  rotation?: [number, number, number];
+}
+
+const BODY_PARTS: Record<string, BodyPartConfig> = {
+  head: { type: "sphere", size: [0.12] },
+  neck: { type: "capsule", size: [0.04, 0.15], rotation: [Math.PI / 2, 0, 0] },
+  chest: { type: "box", size: [0.25, 0.3, 0.12] },
+  spine: { type: "box", size: [0.2, 0.25, 0.1] },
+  // Arms - oriented along bone direction (horizontal)
+  upper_arm_L: {
+    type: "capsule",
+    size: [0.05, 0.2],
+    rotation: [0, 0, Math.PI / 2],
+    offset: [-0.15, 0, 0],
+  },
+  upper_arm_R: {
+    type: "capsule",
+    size: [0.05, 0.2],
+    rotation: [0, 0, -Math.PI / 2],
+    offset: [0.15, 0, 0],
+  },
+  forearm_L: {
+    type: "capsule",
+    size: [0.04, 0.2],
+    rotation: [0, 0, Math.PI / 2],
+    offset: [-0.1, 0, 0],
+  },
+  forearm_R: {
+    type: "capsule",
+    size: [0.04, 0.2],
+    rotation: [0, 0, -Math.PI / 2],
+    offset: [0.1, 0, 0],
+  },
+  hand_L: { type: "sphere", size: [0.05] },
+  hand_R: { type: "sphere", size: [0.05] },
+  // Legs - oriented along bone direction (vertical down)
+  // thigh goes from hip to knee (0.4 units), shin goes from knee to ankle (0.15 units)
+  thigh_L: { type: "capsule", size: [0.07, 0.25], offset: [0, -0.2, 0] },
+  thigh_R: { type: "capsule", size: [0.07, 0.25], offset: [0, -0.2, 0] },
+  shin_L: { type: "capsule", size: [0.06, 0.1], offset: [0, -0.075, 0] },
+  shin_R: { type: "capsule", size: [0.06, 0.1], offset: [0, -0.075, 0] },
+  foot_L: { type: "box", size: [0.08, 0.04, 0.12], offset: [0, 0, 0.03] },
+  foot_R: { type: "box", size: [0.08, 0.04, 0.12], offset: [0, 0, 0.03] },
+};
+
+function createBodyPartMesh(boneName: string): THREE.Mesh | null {
+  const config = BODY_PARTS[boneName];
+  if (!config) return null;
+
+  let geometry: THREE.BufferGeometry;
+  switch (config.type) {
+    case "sphere":
+      geometry = new THREE.SphereGeometry(config.size[0], 8, 8);
+      break;
+    case "capsule":
+      geometry = new THREE.CapsuleGeometry(
+        config.size[0],
+        config.size[1] as number,
+        4,
+        8,
+      );
+      break;
+    case "box":
+      geometry = new THREE.BoxGeometry(
+        config.size[0],
+        config.size[1] as number,
+        config.size[2] as number,
+      );
+      break;
+  }
+
+  const material = new THREE.MeshPhongMaterial({
+    color: 0x4488ff,
+    transparent: true,
+    opacity: 0.9,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+
+  if (config.offset) mesh.position.set(...config.offset);
+  if (config.rotation) mesh.rotation.set(...config.rotation);
+
+  return mesh;
+}
+
 // Sample skeleton data - a simple humanoid rig
 // Root is positioned at y=1.2 to lift the skeleton above ground
 const SAMPLE_SKELETON: { bones: BoneData[] } = {
@@ -169,12 +257,15 @@ export default function SkeletonViewer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [currentAnimation, setCurrentAnimation] = useState("Walk");
   const [showPixelView, setShowPixelView] = useState(false);
+  const [showSkin, setShowSkin] = useState(true);
   const [currentFrame, setCurrentFrame] = useState(0);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const boneObjectsRef = useRef<Record<string, THREE.Object3D>>({});
+  const bodyMeshesRef = useRef<THREE.Mesh[]>([]);
+  const skeletonMeshesRef = useRef<THREE.Mesh[]>([]);
   const animationTimeRef = useRef(0);
 
   useEffect(() => {
@@ -192,8 +283,8 @@ export default function SkeletonViewer() {
       0.1,
       1000,
     );
-    camera.position.set(2, 1.8, 3);
-    camera.lookAt(0, 1.2, 0);
+    camera.position.set(3, 1.5, 4);
+    camera.lookAt(0, 1.0, 0);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -216,6 +307,8 @@ export default function SkeletonViewer() {
     // Build skeleton
     const boneObjects: Record<string, THREE.Object3D> = {};
     const boneMeshes = new THREE.Group();
+    const skeletonMeshes: THREE.Mesh[] = [];
+    const bodyMeshes: THREE.Mesh[] = [];
     scene.add(boneMeshes);
 
     SAMPLE_SKELETON.bones.forEach((boneData) => {
@@ -227,11 +320,19 @@ export default function SkeletonViewer() {
         boneData.position[2],
       );
 
-      // Create visual representation
+      // Create skeleton debug sphere (orange)
       const sphereGeometry = new THREE.SphereGeometry(0.05, 8, 8);
       const sphereMaterial = new THREE.MeshPhongMaterial({ color: 0xff6600 });
       const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
       bone.add(sphere);
+      skeletonMeshes.push(sphere);
+
+      // Create body part mesh (blue)
+      const bodyMesh = createBodyPartMesh(boneData.name);
+      if (bodyMesh) {
+        bone.add(bodyMesh);
+        bodyMeshes.push(bodyMesh);
+      }
 
       boneObjects[boneData.name] = bone;
 
@@ -242,6 +343,10 @@ export default function SkeletonViewer() {
         boneMeshes.add(bone);
       }
     });
+
+    // Store mesh refs for visibility toggling
+    bodyMeshesRef.current = bodyMeshes;
+    skeletonMeshesRef.current = skeletonMeshes;
 
     // Create lines between bones
     SAMPLE_SKELETON.bones.forEach((boneData) => {
@@ -313,11 +418,12 @@ export default function SkeletonViewer() {
     };
   }, [currentAnimation]);
 
-  // Separate effect to handle pixel view updates
+  // Separate effect to handle pixel view updates using offscreen renderer
   useEffect(() => {
     const canvas = canvasRef.current;
-    const camera = cameraRef.current;
-    if (!showPixelView || !canvas || !camera) return;
+    const mainCamera = cameraRef.current;
+    const scene = sceneRef.current;
+    if (!showPixelView || !canvas || !mainCamera || !scene) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -325,29 +431,43 @@ export default function SkeletonViewer() {
     const width = 64;
     const height = 64;
 
+    // Create offscreen renderer for pixel view
+    const pixelRenderer = new THREE.WebGLRenderer({ antialias: false });
+    pixelRenderer.setSize(width, height);
+
+    // Create a camera that matches the main camera but with square aspect
+    const pixelCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+    pixelCamera.position.copy(mainCamera.position);
+    pixelCamera.quaternion.copy(mainCamera.quaternion);
+
+    // Buffer to read pixels
+    const pixelBuffer = new Uint8Array(width * height * 4);
+
     const updatePixelView = () => {
-      const boneObjects = boneObjectsRef.current;
-      if (Object.keys(boneObjects).length === 0) return;
+      // Sync camera position/rotation with main camera
+      pixelCamera.position.copy(mainCamera.position);
+      pixelCamera.quaternion.copy(mainCamera.quaternion);
 
-      ctx.fillStyle = "#1a1a1a";
-      ctx.fillRect(0, 0, width, height);
+      // Render the scene
+      pixelRenderer.render(scene, pixelCamera);
 
-      // Project all bone positions to 2D
-      const vector = new THREE.Vector3();
+      // Read pixels from WebGL context
+      const gl = pixelRenderer.getContext();
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixelBuffer);
 
-      ctx.fillStyle = "#00ff88";
-      Object.values(boneObjects).forEach((bone) => {
-        bone.updateMatrixWorld(true);
-        bone.getWorldPosition(vector);
-        vector.project(camera);
-
-        const x = Math.round(((vector.x + 1) * width) / 2);
-        const y = Math.round(((1 - vector.y) * height) / 2);
-
-        if (x >= 0 && x < width && y >= 0 && y < height) {
-          ctx.fillRect(x - 1, y - 1, 3, 3);
+      // Create ImageData and copy pixels (flip Y since WebGL is bottom-up)
+      const imageData = ctx.createImageData(width, height);
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const srcIdx = ((height - 1 - y) * width + x) * 4;
+          const dstIdx = (y * width + x) * 4;
+          imageData.data[dstIdx] = pixelBuffer[srcIdx] ?? 0;
+          imageData.data[dstIdx + 1] = pixelBuffer[srcIdx + 1] ?? 0;
+          imageData.data[dstIdx + 2] = pixelBuffer[srcIdx + 2] ?? 0;
+          imageData.data[dstIdx + 3] = pixelBuffer[srcIdx + 3] ?? 255;
         }
-      });
+      }
+      ctx.putImageData(imageData, 0, 0);
     };
 
     // Run update loop for pixel view
@@ -360,8 +480,15 @@ export default function SkeletonViewer() {
 
     return () => {
       cancelAnimationFrame(pixelAnimId);
+      pixelRenderer.dispose();
     };
   }, [showPixelView]);
+
+  // Toggle visibility between skeleton and skin
+  useEffect(() => {
+    bodyMeshesRef.current.forEach((m) => (m.visible = showSkin));
+    skeletonMeshesRef.current.forEach((m) => (m.visible = !showSkin));
+  }, [showSkin]);
 
   return (
     <div className="w-full h-screen flex flex-col bg-gray-900 text-white">
@@ -394,7 +521,7 @@ export default function SkeletonViewer() {
           </div>
         )}
 
-        <div className="w-80 bg-gray-800 p-4 overflow-y-auto border-l border-gray-700">
+        <div className="w-64 bg-gray-800 p-3 overflow-y-auto border-l border-gray-700">
           <div className="space-y-4">
             <div className="bg-gray-700 rounded p-3">
               <h3 className="font-bold mb-3">Animation</h3>
@@ -433,6 +560,15 @@ export default function SkeletonViewer() {
 
             <div className="bg-gray-700 rounded p-3">
               <h3 className="font-bold mb-3">View Options</h3>
+              <label className="flex items-center space-x-2 cursor-pointer mb-2">
+                <input
+                  type="checkbox"
+                  checked={showSkin}
+                  onChange={(e) => setShowSkin(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">Show Skin</span>
+              </label>
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="checkbox"
