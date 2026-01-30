@@ -4,7 +4,10 @@
       "Bash(bunx tsc:*)",
       "Bash(bun tsc:*)",
       "Bash(bun type-check:*)",
-      "Bash(export PATH=\"$PATH:/workspaces/animation-3/node_modules/.bin\")"
+      "Bash(export PATH=\"$PATH:/workspaces/animation-3/node_modules/.bin\")",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl:*)",
+      "Bash(node:*)"
     ]
   }
 }

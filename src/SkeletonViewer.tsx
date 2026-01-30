@@ -55,12 +55,13 @@ const BODY_PARTS: Record<string, BodyPartConfig> = {
   },
   hand_L: { type: "sphere", size: [0.05] },
   hand_R: { type: "sphere", size: [0.05] },
-  // Legs - oriented along bone direction (vertical down)
-  // thigh goes from hip to knee (0.4 units), shin goes from knee to ankle (0.15 units)
-  thigh_L: { type: "capsule", size: [0.07, 0.25], offset: [0, -0.2, 0] },
-  thigh_R: { type: "capsule", size: [0.07, 0.25], offset: [0, -0.2, 0] },
-  shin_L: { type: "capsule", size: [0.06, 0.1], offset: [0, -0.075, 0] },
-  shin_R: { type: "capsule", size: [0.06, 0.1], offset: [0, -0.075, 0] },
+  // Legs - meshes extend UPWARD from bone position toward parent
+  // thigh_L bone is at knee (0.4 below hip), mesh fills hip-to-knee
+  // shin_L bone is at ankle (0.4 below knee), mesh fills knee-to-ankle
+  thigh_L: { type: "capsule", size: [0.07, 0.25], offset: [0, 0.2, 0] },
+  thigh_R: { type: "capsule", size: [0.07, 0.25], offset: [0, 0.2, 0] },
+  shin_L: { type: "capsule", size: [0.06, 0.25], offset: [0, 0.2, 0] },
+  shin_R: { type: "capsule", size: [0.06, 0.25], offset: [0, 0.2, 0] },
   foot_L: { type: "box", size: [0.08, 0.04, 0.12], offset: [0, 0, 0.03] },
   foot_R: { type: "box", size: [0.08, 0.04, 0.12], offset: [0, 0, 0.03] },
 };
@@ -136,99 +137,76 @@ const SAMPLE_SKELETON: { bones: BoneData[] } = {
   ],
 };
 
-// Simple walk cycle animation (8 frames)
-// Note: hip_L/hip_R are the joints that rotate the upper leg
+// Motion capture walk cycle from CMU Mocap Database (BVH-Examples/walk-cycle.bvh)
+// 42 frames at 120fps subsampled to 8 keyframes, converted deg→rad
+// Leg rotations from mocap, arm swing derived from contralateral hip motion
 const WALK_ANIMATION: Animation = {
   name: "Walk",
-  duration: 1.0,
+  duration: 1.75,
   frames: [
-    // Frame 0 - left foot forward, right leg passing behind
+    // Frame 0 (BVH 0) - Left knee high, right stance
     {
-      hip_L: [0.3, 0, 0],
-      shin_L: [0.1, 0, 0],
-      hip_R: [-0.3, 0, 0],
-      shin_R: [0.4, 0, 0],
-      shoulder_L: [-0.3, 0, 0],
-      forearm_L: [-0.2, 0, 0],
-      shoulder_R: [0.3, 0, 0],
-      forearm_R: [-0.2, 0, 0],
+      hip_L: [-0.24, 0, 0], thigh_L: [1.02, 0, 0], shin_L: [0, 0, 0],
+      hip_R: [-0.26, 0, 0], thigh_R: [0.21, 0, 0], shin_R: [-0.09, 0, 0],
+      shoulder_L: [-0.16, 0, 0], forearm_L: [-0.25, 0, 0],
+      shoulder_R: [-0.14, 0, 0], forearm_R: [-0.24, 0, 0],
+      spine: [0, 0.01, 0],
     },
-    // Frame 1 - left planted, right swinging forward
+    // Frame 1 (BVH 5) - Left swing forward, right loading
     {
-      hip_L: [0.2, 0, 0],
-      shin_L: [0.05, 0, 0],
-      hip_R: [-0.1, 0, 0],
-      shin_R: [0.6, 0, 0],
-      shoulder_L: [-0.2, 0, 0],
-      forearm_L: [-0.15, 0, 0],
-      shoulder_R: [0.2, 0, 0],
-      forearm_R: [-0.15, 0, 0],
+      hip_L: [-0.53, 0, 0], thigh_L: [0.99, 0, 0], shin_L: [-0.17, 0, 0],
+      hip_R: [-0.11, 0, 0], thigh_R: [0.13, 0, 0], shin_R: [-0.13, 0, 0],
+      shoulder_L: [-0.07, 0, 0], forearm_L: [-0.22, 0, 0],
+      shoulder_R: [-0.32, 0, 0], forearm_R: [-0.30, 0, 0],
+      spine: [0, -0.02, 0],
     },
-    // Frame 2 - passing position
+    // Frame 2 (BVH 10) - Left extending, right mid stance
     {
-      hip_L: [0, 0, 0],
-      shin_L: [0.1, 0, 0],
-      hip_R: [0, 0, 0],
-      shin_R: [0.3, 0, 0],
-      shoulder_L: [0, 0, 0],
-      forearm_L: [-0.1, 0, 0],
-      shoulder_R: [0, 0, 0],
-      forearm_R: [-0.1, 0, 0],
+      hip_L: [-0.53, 0, 0], thigh_L: [0.24, 0, 0], shin_L: [-0.20, 0, 0],
+      hip_R: [0.01, 0, 0], thigh_R: [0.14, 0, 0], shin_R: [-0.19, 0, 0],
+      shoulder_L: [0.01, 0, 0], forearm_L: [-0.20, 0, 0],
+      shoulder_R: [-0.32, 0, 0], forearm_R: [-0.30, 0, 0],
+      spine: [0, -0.03, 0],
     },
-    // Frame 3 - right extending forward
+    // Frame 3 (BVH 16) - Left planted, right lifting
     {
-      hip_L: [-0.2, 0, 0],
-      shin_L: [0.5, 0, 0],
-      hip_R: [0.2, 0, 0],
-      shin_R: [0.1, 0, 0],
-      shoulder_L: [0.2, 0, 0],
-      forearm_L: [-0.15, 0, 0],
-      shoulder_R: [-0.2, 0, 0],
-      forearm_R: [-0.15, 0, 0],
+      hip_L: [-0.49, 0, 0], thigh_L: [0.33, 0, 0], shin_L: [-0.05, 0, 0],
+      hip_R: [0.07, 0, 0], thigh_R: [0.42, 0, 0], shin_R: [-0.21, 0, 0],
+      shoulder_L: [0.04, 0, 0], forearm_L: [-0.21, 0, 0],
+      shoulder_R: [-0.29, 0, 0], forearm_R: [-0.29, 0, 0],
+      spine: [0, -0.02, 0],
     },
-    // Frame 4 - right foot forward, left leg passing behind
+    // Frame 4 (BVH 21) - Right knee high, left stance
     {
-      hip_L: [-0.3, 0, 0],
-      shin_L: [0.4, 0, 0],
-      hip_R: [0.3, 0, 0],
-      shin_R: [0.1, 0, 0],
-      shoulder_L: [0.3, 0, 0],
-      forearm_L: [-0.2, 0, 0],
-      shoulder_R: [-0.3, 0, 0],
-      forearm_R: [-0.2, 0, 0],
+      hip_L: [-0.32, 0, 0], thigh_L: [0.39, 0, 0], shin_L: [-0.11, 0, 0],
+      hip_R: [-0.23, 0, 0], thigh_R: [0.98, 0, 0], shin_R: [0.05, 0, 0],
+      shoulder_L: [-0.14, 0, 0], forearm_L: [-0.24, 0, 0],
+      shoulder_R: [-0.19, 0, 0], forearm_R: [-0.26, 0, 0],
+      spine: [0, 0.01, 0],
     },
-    // Frame 5 - right planted, left swinging forward
+    // Frame 5 (BVH 26) - Right swing forward, left loading
     {
-      hip_L: [-0.1, 0, 0],
-      shin_L: [0.6, 0, 0],
-      hip_R: [0.2, 0, 0],
-      shin_R: [0.05, 0, 0],
-      shoulder_L: [0.2, 0, 0],
-      forearm_L: [-0.15, 0, 0],
-      shoulder_R: [-0.2, 0, 0],
-      forearm_R: [-0.15, 0, 0],
+      hip_L: [-0.12, 0, 0], thigh_L: [0.27, 0, 0], shin_L: [-0.15, 0, 0],
+      hip_R: [-0.48, 0, 0], thigh_R: [0.73, 0, 0], shin_R: [-0.10, 0, 0],
+      shoulder_L: [-0.29, 0, 0], forearm_L: [-0.29, 0, 0],
+      shoulder_R: [-0.07, 0, 0], forearm_R: [-0.22, 0, 0],
+      spine: [0, 0.02, 0],
     },
-    // Frame 6 - passing position
+    // Frame 6 (BVH 31) - Right extending, left mid stance
     {
-      hip_L: [0, 0, 0],
-      shin_L: [0.3, 0, 0],
-      hip_R: [0, 0, 0],
-      shin_R: [0.1, 0, 0],
-      shoulder_L: [0, 0, 0],
-      forearm_L: [-0.1, 0, 0],
-      shoulder_R: [0, 0, 0],
-      forearm_R: [-0.1, 0, 0],
+      hip_L: [0.02, 0, 0], thigh_L: [0.29, 0, 0], shin_L: [-0.23, 0, 0],
+      hip_R: [-0.41, 0, 0], thigh_R: [0.01, 0, 0], shin_R: [-0.19, 0, 0],
+      shoulder_L: [-0.25, 0, 0], forearm_L: [-0.27, 0, 0],
+      shoulder_R: [0.01, 0, 0], forearm_R: [-0.20, 0, 0],
+      spine: [0, 0.03, 0],
     },
-    // Frame 7 - left extending forward
+    // Frame 7 (BVH 37) - Right planted, left lifting
     {
-      hip_L: [0.2, 0, 0],
-      shin_L: [0.1, 0, 0],
-      hip_R: [-0.2, 0, 0],
-      shin_R: [0.5, 0, 0],
-      shoulder_L: [-0.2, 0, 0],
-      forearm_L: [-0.15, 0, 0],
-      shoulder_R: [0.2, 0, 0],
-      forearm_R: [-0.15, 0, 0],
+      hip_L: [0.04, 0, 0], thigh_L: [0.54, 0, 0], shin_L: [-0.25, 0, 0],
+      hip_R: [-0.41, 0, 0], thigh_R: [0.24, 0, 0], shin_R: [-0.03, 0, 0],
+      shoulder_L: [-0.25, 0, 0], forearm_L: [-0.27, 0, 0],
+      shoulder_R: [0.02, 0, 0], forearm_R: [-0.20, 0, 0],
+      spine: [0, 0.02, 0],
     },
   ],
 };
