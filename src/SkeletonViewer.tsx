@@ -21,49 +21,125 @@ interface BodyPartConfig {
   size: [number] | [number, number] | [number, number, number];
   offset?: [number, number, number];
   rotation?: [number, number, number];
+  color?: number;
 }
 
+// Colors for clothing
+const SKIN_COLOR = 0xd4a574;
+const SHIRT_COLOR = 0x3366aa;
+const PANTS_COLOR = 0x3a3a4a;
+const SHOE_COLOR = 0x2a2a2a;
+
+// Each mesh sits on its bone and spans TOWARD its child bone.
+// Offset = halfway to child. Size covers the full segment with slight overlap.
+// Skeleton reference:
+//   root(0,1.2,0) → spine(0,+0.5) → chest(0,+0.3) → neck(0,+0.3) → head(0,+0.2)
+//   chest → shoulder_L(-0.2,+0.2) → upper_arm_L(-0.3,0) → forearm_L(-0.3,0) → hand_L(-0.2,0)
+//   root → hip_L(-0.15,-0.1) → thigh_L(0,-0.4) → shin_L(0,-0.4) → foot_L(0,-0.15,+0.1)
 const BODY_PARTS: Record<string, BodyPartConfig> = {
-  head: { type: "sphere", size: [0.12] },
-  neck: { type: "capsule", size: [0.04, 0.15], rotation: [Math.PI / 2, 0, 0] },
-  chest: { type: "box", size: [0.25, 0.3, 0.12] },
-  spine: { type: "box", size: [0.2, 0.25, 0.1] },
-  // Arms - oriented along bone direction (horizontal)
+  // -- Torso: each box spans from bone toward child --
+  // root → spine: (0, +0.5, 0)
+  root: {
+    type: "box", size: [0.30, 0.55, 0.16], offset: [0, 0.22, 0],
+    color: PANTS_COLOR,
+  },
+  // spine → chest: (0, +0.3, 0)
+  spine: {
+    type: "box", size: [0.30, 0.34, 0.16], offset: [0, 0.15, 0],
+    color: SHIRT_COLOR,
+  },
+  // chest → neck: (0, +0.3, 0)
+  chest: {
+    type: "box", size: [0.32, 0.34, 0.17], offset: [0, 0.15, 0],
+    color: SHIRT_COLOR,
+  },
+
+  // -- Neck & Head (skin) --
+  // neck → head: (0, +0.2, 0)
+  neck: {
+    type: "capsule", size: [0.05, 0.08], offset: [0, 0.1, 0],
+    color: SKIN_COLOR,
+  },
+  // head: terminal
+  head: { type: "sphere", size: [0.13], color: SKIN_COLOR },
+
+  // -- Arms (shirt sleeves): capsules rotated to align with X axis --
+  // shoulder_L → upper_arm_L: (-0.3, 0, 0)
+  shoulder_L: {
+    type: "capsule", size: [0.065, 0.16],
+    rotation: [0, 0, Math.PI / 2], offset: [-0.15, 0, 0],
+    color: SHIRT_COLOR,
+  },
+  shoulder_R: {
+    type: "capsule", size: [0.065, 0.16],
+    rotation: [0, 0, -Math.PI / 2], offset: [0.15, 0, 0],
+    color: SHIRT_COLOR,
+  },
+  // upper_arm → forearm: (-0.3, 0, 0)
   upper_arm_L: {
-    type: "capsule",
-    size: [0.05, 0.2],
-    rotation: [0, 0, Math.PI / 2],
-    offset: [-0.15, 0, 0],
+    type: "capsule", size: [0.055, 0.18],
+    rotation: [0, 0, Math.PI / 2], offset: [-0.15, 0, 0],
+    color: SHIRT_COLOR,
   },
   upper_arm_R: {
-    type: "capsule",
-    size: [0.05, 0.2],
-    rotation: [0, 0, -Math.PI / 2],
-    offset: [0.15, 0, 0],
+    type: "capsule", size: [0.055, 0.18],
+    rotation: [0, 0, -Math.PI / 2], offset: [0.15, 0, 0],
+    color: SHIRT_COLOR,
   },
+  // forearm → hand: (-0.2, 0, 0)
   forearm_L: {
-    type: "capsule",
-    size: [0.04, 0.2],
-    rotation: [0, 0, Math.PI / 2],
-    offset: [-0.1, 0, 0],
+    type: "capsule", size: [0.045, 0.12],
+    rotation: [0, 0, Math.PI / 2], offset: [-0.1, 0, 0],
+    color: SHIRT_COLOR,
   },
   forearm_R: {
-    type: "capsule",
-    size: [0.04, 0.2],
-    rotation: [0, 0, -Math.PI / 2],
-    offset: [0.1, 0, 0],
+    type: "capsule", size: [0.045, 0.12],
+    rotation: [0, 0, -Math.PI / 2], offset: [0.1, 0, 0],
+    color: SHIRT_COLOR,
   },
-  hand_L: { type: "sphere", size: [0.05] },
-  hand_R: { type: "sphere", size: [0.05] },
-  // Legs - meshes extend UPWARD from bone position toward parent
-  // thigh_L bone is at knee (0.4 below hip), mesh fills hip-to-knee
-  // shin_L bone is at ankle (0.4 below knee), mesh fills knee-to-ankle
-  thigh_L: { type: "capsule", size: [0.07, 0.25], offset: [0, 0.2, 0] },
-  thigh_R: { type: "capsule", size: [0.07, 0.25], offset: [0, 0.2, 0] },
-  shin_L: { type: "capsule", size: [0.06, 0.25], offset: [0, 0.2, 0] },
-  shin_R: { type: "capsule", size: [0.06, 0.25], offset: [0, 0.2, 0] },
-  foot_L: { type: "box", size: [0.08, 0.04, 0.12], offset: [0, 0, 0.03] },
-  foot_R: { type: "box", size: [0.08, 0.04, 0.12], offset: [0, 0, 0.03] },
+  // hands: terminal (skin)
+  hand_L: { type: "sphere", size: [0.04], color: SKIN_COLOR },
+  hand_R: { type: "sphere", size: [0.04], color: SKIN_COLOR },
+
+  // -- Legs (pants): capsules span DOWN from bone toward child --
+  // hip → thigh: (0, -0.4, 0) — upper leg
+  hip_L: {
+    type: "capsule", size: [0.085, 0.24], offset: [0, -0.2, 0],
+    color: PANTS_COLOR,
+  },
+  hip_R: {
+    type: "capsule", size: [0.085, 0.24], offset: [0, -0.2, 0],
+    color: PANTS_COLOR,
+  },
+  // thigh → shin: (0, -0.4, 0) — lower leg
+  thigh_L: {
+    type: "capsule", size: [0.07, 0.26], offset: [0, -0.2, 0],
+    color: PANTS_COLOR,
+  },
+  thigh_R: {
+    type: "capsule", size: [0.07, 0.26], offset: [0, -0.2, 0],
+    color: PANTS_COLOR,
+  },
+  // shin → foot: (0, -0.15, 0.1) — ankle area
+  shin_L: {
+    type: "capsule", size: [0.06, 0.04], offset: [0, -0.06, 0.04],
+    color: PANTS_COLOR,
+  },
+  shin_R: {
+    type: "capsule", size: [0.06, 0.04], offset: [0, -0.06, 0.04],
+    color: PANTS_COLOR,
+  },
+
+  // -- Shoes --
+  // foot: terminal
+  foot_L: {
+    type: "box", size: [0.10, 0.07, 0.20], offset: [0, -0.02, 0.04],
+    color: SHOE_COLOR,
+  },
+  foot_R: {
+    type: "box", size: [0.10, 0.07, 0.20], offset: [0, -0.02, 0.04],
+    color: SHOE_COLOR,
+  },
 };
 
 function createBodyPartMesh(boneName: string): THREE.Mesh | null {
@@ -93,9 +169,9 @@ function createBodyPartMesh(boneName: string): THREE.Mesh | null {
   }
 
   const material = new THREE.MeshPhongMaterial({
-    color: 0x4488ff,
+    color: config.color ?? 0x4488ff,
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.95,
   });
   const mesh = new THREE.Mesh(geometry, material);
 
