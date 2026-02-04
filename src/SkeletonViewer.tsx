@@ -32,112 +32,112 @@ const SHOE_COLOR = 0x2a2a2a;
 
 // Each mesh sits on its bone and spans TOWARD its child bone.
 // Offset = halfway to child. Size covers the full segment with slight overlap.
-// Skeleton reference:
-//   root(0,1.2,0) → spine(0,+0.5) → chest(0,+0.3) → neck(0,+0.3) → head(0,+0.2)
-//   chest → shoulder_L(-0.2,+0.2) → upper_arm_L(-0.3,0) → forearm_L(-0.3,0) → hand_L(-0.2,0)
-//   root → hip_L(-0.15,-0.1) → thigh_L(0,-0.4) → shin_L(0,-0.4) → foot_L(0,-0.15,+0.1)
+// Skeleton reference (shortened torso):
+//   root(0,1.05,0) → spine(0,+0.35) → chest(0,+0.25) → neck(0,+0.25) → head(0,+0.15)
+//   chest → shoulder_L(-0.18,+0.18) → upper_arm_L(-0.28,0) → forearm_L(-0.26,0) → hand_L(-0.18,0)
+//   root → hip_L(-0.12,-0.08) → thigh_L(0,-0.42) → shin_L(0,-0.40) → foot_L(0,-0.12,+0.08)
 const BODY_PARTS: Record<string, BodyPartConfig> = {
   // -- Torso: each box spans from bone toward child --
-  // root → spine: (0, +0.5, 0)
+  // root → spine: (0, +0.35, 0)
   root: {
-    type: "box", size: [0.30, 0.55, 0.16], offset: [0, 0.22, 0],
+    type: "box", size: [0.28, 0.38, 0.15], offset: [0, 0.17, 0],
     color: PANTS_COLOR,
   },
-  // spine → chest: (0, +0.3, 0)
+  // spine → chest: (0, +0.25, 0)
   spine: {
-    type: "box", size: [0.30, 0.34, 0.16], offset: [0, 0.15, 0],
+    type: "box", size: [0.28, 0.28, 0.15], offset: [0, 0.12, 0],
     color: SHIRT_COLOR,
   },
-  // chest → neck: (0, +0.3, 0)
+  // chest → neck: (0, +0.25, 0)
   chest: {
-    type: "box", size: [0.32, 0.34, 0.17], offset: [0, 0.15, 0],
+    type: "box", size: [0.30, 0.28, 0.16], offset: [0, 0.12, 0],
     color: SHIRT_COLOR,
   },
 
   // -- Neck & Head (skin) --
-  // neck → head: (0, +0.2, 0)
+  // neck → head: (0, +0.15, 0)
   neck: {
-    type: "capsule", size: [0.05, 0.08], offset: [0, 0.1, 0],
+    type: "capsule", size: [0.045, 0.05], offset: [0, 0.075, 0],
     color: SKIN_COLOR,
   },
   // head: terminal
-  head: { type: "sphere", size: [0.13], color: SKIN_COLOR },
+  head: { type: "sphere", size: [0.11], color: SKIN_COLOR },
 
   // -- Arms (shirt sleeves): capsules rotated to align with X axis --
-  // shoulder_L → upper_arm_L: (-0.3, 0, 0)
+  // shoulder_L → upper_arm_L: (-0.28, 0, 0)
   shoulder_L: {
-    type: "capsule", size: [0.065, 0.16],
-    rotation: [0, 0, Math.PI / 2], offset: [-0.15, 0, 0],
+    type: "capsule", size: [0.06, 0.14],
+    rotation: [0, 0, Math.PI / 2], offset: [-0.14, 0, 0],
     color: SHIRT_COLOR,
   },
   shoulder_R: {
-    type: "capsule", size: [0.065, 0.16],
-    rotation: [0, 0, -Math.PI / 2], offset: [0.15, 0, 0],
+    type: "capsule", size: [0.06, 0.14],
+    rotation: [0, 0, -Math.PI / 2], offset: [0.14, 0, 0],
     color: SHIRT_COLOR,
   },
-  // upper_arm → forearm: (-0.3, 0, 0)
+  // upper_arm → forearm: (-0.26, 0, 0)
   upper_arm_L: {
-    type: "capsule", size: [0.055, 0.18],
-    rotation: [0, 0, Math.PI / 2], offset: [-0.15, 0, 0],
+    type: "capsule", size: [0.05, 0.16],
+    rotation: [0, 0, Math.PI / 2], offset: [-0.13, 0, 0],
     color: SHIRT_COLOR,
   },
   upper_arm_R: {
-    type: "capsule", size: [0.055, 0.18],
-    rotation: [0, 0, -Math.PI / 2], offset: [0.15, 0, 0],
+    type: "capsule", size: [0.05, 0.16],
+    rotation: [0, 0, -Math.PI / 2], offset: [0.13, 0, 0],
     color: SHIRT_COLOR,
   },
-  // forearm → hand: (-0.2, 0, 0)
+  // forearm → hand: (-0.18, 0, 0)
   forearm_L: {
-    type: "capsule", size: [0.045, 0.12],
-    rotation: [0, 0, Math.PI / 2], offset: [-0.1, 0, 0],
+    type: "capsule", size: [0.04, 0.10],
+    rotation: [0, 0, Math.PI / 2], offset: [-0.09, 0, 0],
     color: SHIRT_COLOR,
   },
   forearm_R: {
-    type: "capsule", size: [0.045, 0.12],
-    rotation: [0, 0, -Math.PI / 2], offset: [0.1, 0, 0],
+    type: "capsule", size: [0.04, 0.10],
+    rotation: [0, 0, -Math.PI / 2], offset: [0.09, 0, 0],
     color: SHIRT_COLOR,
   },
   // hands: terminal (skin)
-  hand_L: { type: "sphere", size: [0.04], color: SKIN_COLOR },
-  hand_R: { type: "sphere", size: [0.04], color: SKIN_COLOR },
+  hand_L: { type: "sphere", size: [0.035], color: SKIN_COLOR },
+  hand_R: { type: "sphere", size: [0.035], color: SKIN_COLOR },
 
   // -- Legs (pants): capsules span DOWN from bone toward child --
-  // hip → thigh: (0, -0.4, 0) — upper leg
+  // hip → thigh: (0, -0.42, 0) — upper leg
   hip_L: {
-    type: "capsule", size: [0.085, 0.24], offset: [0, -0.2, 0],
+    type: "capsule", size: [0.08, 0.26], offset: [0, -0.21, 0],
     color: PANTS_COLOR,
   },
   hip_R: {
-    type: "capsule", size: [0.085, 0.24], offset: [0, -0.2, 0],
+    type: "capsule", size: [0.08, 0.26], offset: [0, -0.21, 0],
     color: PANTS_COLOR,
   },
-  // thigh → shin: (0, -0.4, 0) — lower leg
+  // thigh → shin: (0, -0.40, 0) — lower leg
   thigh_L: {
-    type: "capsule", size: [0.07, 0.26], offset: [0, -0.2, 0],
+    type: "capsule", size: [0.065, 0.26], offset: [0, -0.20, 0],
     color: PANTS_COLOR,
   },
   thigh_R: {
-    type: "capsule", size: [0.07, 0.26], offset: [0, -0.2, 0],
+    type: "capsule", size: [0.065, 0.26], offset: [0, -0.20, 0],
     color: PANTS_COLOR,
   },
-  // shin → foot: (0, -0.15, 0.1) — ankle area
+  // shin → foot: (0, -0.12, 0.08) — ankle area
   shin_L: {
-    type: "capsule", size: [0.06, 0.04], offset: [0, -0.06, 0.04],
+    type: "capsule", size: [0.055, 0.03], offset: [0, -0.05, 0.03],
     color: PANTS_COLOR,
   },
   shin_R: {
-    type: "capsule", size: [0.06, 0.04], offset: [0, -0.06, 0.04],
+    type: "capsule", size: [0.055, 0.03], offset: [0, -0.05, 0.03],
     color: PANTS_COLOR,
   },
 
   // -- Shoes --
   // foot: terminal
   foot_L: {
-    type: "box", size: [0.10, 0.07, 0.20], offset: [0, -0.02, 0.04],
+    type: "box", size: [0.09, 0.06, 0.18], offset: [0, -0.01, 0.04],
     color: SHOE_COLOR,
   },
   foot_R: {
-    type: "box", size: [0.10, 0.07, 0.20], offset: [0, -0.02, 0.04],
+    type: "box", size: [0.09, 0.06, 0.18], offset: [0, -0.01, 0.04],
     color: SHOE_COLOR,
   },
 };
@@ -182,34 +182,35 @@ function createBodyPartMesh(boneName: string): THREE.Mesh | null {
 }
 
 // Sample skeleton data - a simple humanoid rig
-// Root is positioned at y=1.2 to lift the skeleton above ground
+// Root is positioned at y=1.05 (adjusted for shorter torso)
+// Torso proportions: root→spine 0.35, spine→chest 0.25, chest→neck 0.25
 const SAMPLE_SKELETON: { bones: BoneData[] } = {
   bones: [
-    { name: "root", parent: null, position: [0, 1.2, 0] },
-    { name: "spine", parent: "root", position: [0, 0.5, 0] },
-    { name: "chest", parent: "spine", position: [0, 0.3, 0] },
-    { name: "neck", parent: "chest", position: [0, 0.3, 0] },
-    { name: "head", parent: "neck", position: [0, 0.2, 0] },
+    { name: "root", parent: null, position: [0, 1.05, 0] },
+    { name: "spine", parent: "root", position: [0, 0.35, 0] },
+    { name: "chest", parent: "spine", position: [0, 0.25, 0] },
+    { name: "neck", parent: "chest", position: [0, 0.25, 0] },
+    { name: "head", parent: "neck", position: [0, 0.15, 0] },
 
-    { name: "shoulder_L", parent: "chest", position: [-0.2, 0.2, 0] },
-    { name: "upper_arm_L", parent: "shoulder_L", position: [-0.3, 0, 0] },
-    { name: "forearm_L", parent: "upper_arm_L", position: [-0.3, 0, 0] },
-    { name: "hand_L", parent: "forearm_L", position: [-0.2, 0, 0] },
+    { name: "shoulder_L", parent: "chest", position: [-0.18, 0.18, 0] },
+    { name: "upper_arm_L", parent: "shoulder_L", position: [-0.28, 0, 0] },
+    { name: "forearm_L", parent: "upper_arm_L", position: [-0.26, 0, 0] },
+    { name: "hand_L", parent: "forearm_L", position: [-0.18, 0, 0] },
 
-    { name: "shoulder_R", parent: "chest", position: [0.2, 0.2, 0] },
-    { name: "upper_arm_R", parent: "shoulder_R", position: [0.3, 0, 0] },
-    { name: "forearm_R", parent: "upper_arm_R", position: [0.3, 0, 0] },
-    { name: "hand_R", parent: "forearm_R", position: [0.2, 0, 0] },
+    { name: "shoulder_R", parent: "chest", position: [0.18, 0.18, 0] },
+    { name: "upper_arm_R", parent: "shoulder_R", position: [0.28, 0, 0] },
+    { name: "forearm_R", parent: "upper_arm_R", position: [0.26, 0, 0] },
+    { name: "hand_R", parent: "forearm_R", position: [0.18, 0, 0] },
 
-    { name: "hip_L", parent: "root", position: [-0.15, -0.1, 0] },
-    { name: "thigh_L", parent: "hip_L", position: [0, -0.4, 0] },
-    { name: "shin_L", parent: "thigh_L", position: [0, -0.4, 0] },
-    { name: "foot_L", parent: "shin_L", position: [0, -0.15, 0.1] },
+    { name: "hip_L", parent: "root", position: [-0.12, -0.08, 0] },
+    { name: "thigh_L", parent: "hip_L", position: [0, -0.42, 0] },
+    { name: "shin_L", parent: "thigh_L", position: [0, -0.40, 0] },
+    { name: "foot_L", parent: "shin_L", position: [0, -0.12, 0.08] },
 
-    { name: "hip_R", parent: "root", position: [0.15, -0.1, 0] },
-    { name: "thigh_R", parent: "hip_R", position: [0, -0.4, 0] },
-    { name: "shin_R", parent: "thigh_R", position: [0, -0.4, 0] },
-    { name: "foot_R", parent: "shin_R", position: [0, -0.15, 0.1] },
+    { name: "hip_R", parent: "root", position: [0.12, -0.08, 0] },
+    { name: "thigh_R", parent: "hip_R", position: [0, -0.42, 0] },
+    { name: "shin_R", parent: "thigh_R", position: [0, -0.40, 0] },
+    { name: "foot_R", parent: "shin_R", position: [0, -0.12, 0.08] },
   ],
 };
 
@@ -313,6 +314,7 @@ export default function SkeletonViewer() {
   const [showPixelView, setShowPixelView] = useState(false);
   const [showSkin, setShowSkin] = useState(true);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [currentVariant, setCurrentVariant] = useState(1); // 0=tall, 1=normal, 2=short
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -321,6 +323,227 @@ export default function SkeletonViewer() {
   const bodyMeshesRef = useRef<THREE.Mesh[]>([]);
   const skeletonMeshesRef = useRef<THREE.Mesh[]>([]);
   const animationTimeRef = useRef(0);
+  const currentVariantRef = useRef(1);
+
+  // Camera positions for 4 directions (Front, Right, Back, Left)
+  const DIRECTIONS = [
+    { name: "front", pos: [0, 1.5, 4] as const },
+    { name: "right", pos: [4, 1.5, 0] as const },
+    { name: "back", pos: [0, 1.5, -4] as const },
+    { name: "left", pos: [-4, 1.5, 0] as const },
+  ];
+
+  // Body size variants: scale Y for height, slight X/Z for width
+  const BODY_VARIANTS = [
+    { name: "tall", scaleY: 1.12, scaleXZ: 0.95, cameraY: 1.6 },
+    { name: "normal", scaleY: 0.92, scaleXZ: 1.0, cameraY: 1.4 },
+    { name: "short", scaleY: 0.78, scaleXZ: 1.05, cameraY: 1.2 },
+  ];
+
+  const exportSpritesheet = () => {
+    const scene = sceneRef.current;
+    const boneObjects = boneObjectsRef.current;
+    const skeletonMeshes = skeletonMeshesRef.current;
+    const rootBone = boneObjects["root"];
+    if (!scene || !rootBone) return;
+
+    const frameSize = 64;
+    const anim = WALK_ANIMATION;
+    const numFrames = anim.frames.length;
+    const numDirs = DIRECTIONS.length;
+    const numVariants = BODY_VARIANTS.length;
+
+    // Offscreen WebGL renderer with transparent background
+    const offRenderer = new THREE.WebGLRenderer({
+      antialias: false,
+      alpha: true,
+    });
+    offRenderer.setSize(frameSize, frameSize);
+    offRenderer.setClearColor(0x000000, 0);
+
+    // Offscreen camera (square aspect)
+    const offCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+
+    // Composite canvas: 8 cols x (4 directions × 3 variants) rows
+    const compositeCanvas = document.createElement("canvas");
+    compositeCanvas.width = numFrames * frameSize;
+    compositeCanvas.height = numDirs * numVariants * frameSize;
+    const ctx = compositeCanvas.getContext("2d");
+    if (!ctx) return;
+
+    // Pixel read buffer
+    const pixelBuffer = new Uint8Array(frameSize * frameSize * 4);
+
+    // Hide grid
+    const gridHelper = scene.children.find(
+      (c) => c instanceof THREE.GridHelper,
+    );
+    const prevGridVisible = gridHelper?.visible;
+    if (gridHelper) gridHelper.visible = false;
+
+    // Hide skeleton debug spheres (green nodes)
+    const prevSkeletonVisible = skeletonMeshes.map((m) => m.visible);
+    skeletonMeshes.forEach((m) => (m.visible = false));
+
+    // Hide bone connection lines (green lines)
+    const lines: THREE.Line[] = [];
+    scene.traverse((obj) => {
+      if (obj instanceof THREE.Line) {
+        lines.push(obj);
+      }
+    });
+    const prevLineVisible = lines.map((l) => l.visible);
+    lines.forEach((l) => (l.visible = false));
+
+    // Store original background and set transparent
+    const prevBackground = scene.background;
+    scene.background = null;
+
+    // Store original scale
+    const origScale = rootBone.scale.clone();
+
+    // Render each variant × direction × frame
+    for (let varIdx = 0; varIdx < numVariants; varIdx++) {
+      const variant = BODY_VARIANTS[varIdx]!;
+
+      // Apply variant scale to root bone (skeleton distances)
+      rootBone.scale.set(variant.scaleXZ, variant.scaleY, variant.scaleXZ);
+
+      // Counter-scale body meshes so they keep original size
+      const invScaleX = 1 / variant.scaleXZ;
+      const invScaleY = 1 / variant.scaleY;
+      const invScaleZ = 1 / variant.scaleXZ;
+      bodyMeshesRef.current.forEach((mesh) => {
+        mesh.scale.set(invScaleX, invScaleY, invScaleZ);
+      });
+
+      for (let dirIdx = 0; dirIdx < numDirs; dirIdx++) {
+        const dir = DIRECTIONS[dirIdx]!;
+        offCamera.position.set(dir.pos[0], variant.cameraY, dir.pos[2]);
+        offCamera.lookAt(0, variant.cameraY - 0.1, 0);
+
+        for (let frameIdx = 0; frameIdx < numFrames; frameIdx++) {
+          const frame = anim.frames[frameIdx]!;
+
+          // Reset all bone rotations
+          Object.values(boneObjects).forEach((bone) => {
+            bone.rotation.set(0, 0, 0);
+          });
+
+          // Apply this frame's rotations
+          Object.entries(frame).forEach(([boneName, rotation]) => {
+            const bone = boneObjects[boneName];
+            if (bone) {
+              bone.rotation.set(rotation[0], rotation[1], rotation[2]);
+            }
+          });
+
+          // Update matrices through hierarchy
+          scene.updateMatrixWorld(true);
+
+          // Render
+          offRenderer.render(scene, offCamera);
+
+          // Read pixels
+          const gl = offRenderer.getContext();
+          gl.readPixels(
+            0, 0, frameSize, frameSize,
+            gl.RGBA, gl.UNSIGNED_BYTE, pixelBuffer,
+          );
+
+          // Calculate row: variant * numDirs + direction
+          const rowIdx = varIdx * numDirs + dirIdx;
+
+          // Write to composite canvas (flip Y)
+          const imageData = ctx.createImageData(frameSize, frameSize);
+          for (let y = 0; y < frameSize; y++) {
+            for (let x = 0; x < frameSize; x++) {
+              const srcIdx = ((frameSize - 1 - y) * frameSize + x) * 4;
+              const dstIdx = (y * frameSize + x) * 4;
+              imageData.data[dstIdx] = pixelBuffer[srcIdx]!;
+              imageData.data[dstIdx + 1] = pixelBuffer[srcIdx + 1]!;
+              imageData.data[dstIdx + 2] = pixelBuffer[srcIdx + 2]!;
+              imageData.data[dstIdx + 3] = pixelBuffer[srcIdx + 3]!;
+            }
+          }
+          ctx.putImageData(
+            imageData,
+            frameIdx * frameSize,
+            rowIdx * frameSize,
+          );
+        }
+      }
+    }
+
+    // Restore root scale and body mesh scales
+    rootBone.scale.copy(origScale);
+    bodyMeshesRef.current.forEach((mesh) => {
+      mesh.scale.set(1, 1, 1);
+    });
+
+    // Restore scene state
+    if (gridHelper) gridHelper.visible = prevGridVisible ?? true;
+    skeletonMeshes.forEach((m, i) => (m.visible = prevSkeletonVisible[i] ?? false));
+    lines.forEach((l, i) => (l.visible = prevLineVisible[i] ?? true));
+    scene.background = prevBackground;
+
+    // Generate metadata
+    const metadata = {
+      spritesheet: {
+        width: compositeCanvas.width,
+        height: compositeCanvas.height,
+        frameWidth: frameSize,
+        frameHeight: frameSize,
+        columns: numFrames,
+        rows: numDirs * numVariants,
+      },
+      animations: [
+        {
+          name: "walk",
+          frameCount: numFrames,
+          frameDuration: anim.duration / numFrames,
+          totalDuration: anim.duration,
+          looping: true,
+        },
+      ],
+      variants: BODY_VARIANTS.map((v, idx) => ({
+        name: v.name,
+        rowOffset: idx * numDirs,
+        rowCount: numDirs,
+      })),
+      directions: DIRECTIONS.map((d, idx) => ({
+        name: d.name,
+        rowIndex: idx,
+      })),
+      layout: "Each variant has 4 consecutive rows (front, right, back, left). Rows 0-3: tall, Rows 4-7: normal, Rows 8-11: short.",
+    };
+
+    // Download spritesheet PNG
+    compositeCanvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "walk-spritesheet.png";
+      a.click();
+      URL.revokeObjectURL(url);
+    }, "image/png");
+
+    // Download metadata JSON
+    const metaBlob = new Blob([JSON.stringify(metadata, null, 2)], {
+      type: "application/json",
+    });
+    const metaUrl = URL.createObjectURL(metaBlob);
+    const metaLink = document.createElement("a");
+    metaLink.href = metaUrl;
+    metaLink.download = "walk-spritesheet.json";
+    setTimeout(() => {
+      metaLink.click();
+      URL.revokeObjectURL(metaUrl);
+    }, 100);
+
+    offRenderer.dispose();
+  };
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -461,6 +684,23 @@ export default function SkeletonViewer() {
         }
       });
 
+      // Apply body variant scale to skeleton, but counter-scale body meshes
+      const variant = BODY_VARIANTS[currentVariantRef.current];
+      const rootBone = boneObjects["root"];
+      if (variant && rootBone) {
+        rootBone.scale.set(variant.scaleXZ, variant.scaleY, variant.scaleXZ);
+        camera.position.y = variant.cameraY;
+        camera.lookAt(0, variant.cameraY - 0.5, 0);
+
+        // Counter-scale body meshes so they keep original size
+        const invScaleX = 1 / variant.scaleXZ;
+        const invScaleY = 1 / variant.scaleY;
+        const invScaleZ = 1 / variant.scaleXZ;
+        bodyMeshesRef.current.forEach((mesh) => {
+          mesh.scale.set(invScaleX, invScaleY, invScaleZ);
+        });
+      }
+
       renderer.render(scene, camera);
     }
     animate();
@@ -487,6 +727,11 @@ export default function SkeletonViewer() {
       renderer.dispose();
     };
   }, [currentAnimation]);
+
+  // Sync variant ref with state (avoids rebuilding scene on variant change)
+  useEffect(() => {
+    currentVariantRef.current = currentVariant;
+  }, [currentVariant]);
 
   // Separate effect to handle pixel view updates using offscreen renderer
   useEffect(() => {
@@ -615,6 +860,28 @@ export default function SkeletonViewer() {
           <span className="text-xs text-gray-400 self-center ml-2">
             Frame: {currentFrame}
           </span>
+          <button
+            onClick={exportSpritesheet}
+            className="px-3 py-1 rounded text-sm bg-green-700 hover:bg-green-600 ml-2"
+          >
+            Export Spritesheet
+          </button>
+        </div>
+        <div className="flex gap-2 items-center">
+          <span className="text-xs text-gray-400">Body:</span>
+          {BODY_VARIANTS.map((variant, idx) => (
+            <button
+              key={variant.name}
+              onClick={() => setCurrentVariant(idx)}
+              className={`px-2 py-1 rounded text-xs capitalize ${
+                currentVariant === idx
+                  ? "bg-purple-600"
+                  : "bg-gray-600 hover:bg-gray-500"
+              }`}
+            >
+              {variant.name}
+            </button>
+          ))}
         </div>
         <div className="flex gap-4 text-sm">
           <label className="flex items-center gap-1 cursor-pointer">
