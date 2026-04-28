@@ -7,7 +7,10 @@
       "Bash(export PATH=\"$PATH:/workspaces/animation-3/node_modules/.bin\")",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(curl:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(git -C /workspaces/animation-3 log --oneline -10)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(nvidia-smi)"
     ]
   }
 }

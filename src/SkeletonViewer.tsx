@@ -1,5 +1,56 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
+
+// Maps common FBX/Mixamo bone names to our custom skeleton bone names
+const FBX_BONE_MAP: Record<string, string> = {
+  // Mixamo with prefix
+  "mixamorig:Hips": "root",
+  "mixamorig:Spine": "spine",
+  "mixamorig:Spine1": "chest",
+  "mixamorig:Spine2": "chest",
+  "mixamorig:Neck": "neck",
+  "mixamorig:Head": "head",
+  "mixamorig:LeftShoulder": "shoulder_L",
+  "mixamorig:LeftArm": "upper_arm_L",
+  "mixamorig:LeftForeArm": "forearm_L",
+  "mixamorig:LeftHand": "hand_L",
+  "mixamorig:RightShoulder": "shoulder_R",
+  "mixamorig:RightArm": "upper_arm_R",
+  "mixamorig:RightForeArm": "forearm_R",
+  "mixamorig:RightHand": "hand_R",
+  "mixamorig:LeftUpLeg": "hip_L",
+  "mixamorig:LeftLeg": "thigh_L",
+  "mixamorig:LeftFoot": "shin_L",
+  "mixamorig:LeftToeBase": "foot_L",
+  "mixamorig:RightUpLeg": "hip_R",
+  "mixamorig:RightLeg": "thigh_R",
+  "mixamorig:RightFoot": "shin_R",
+  "mixamorig:RightToeBase": "foot_R",
+  // Without prefix
+  Hips: "root",
+  Spine: "spine",
+  Spine1: "chest",
+  Spine2: "chest",
+  Neck: "neck",
+  Head: "head",
+  LeftShoulder: "shoulder_L",
+  LeftArm: "upper_arm_L",
+  LeftForeArm: "forearm_L",
+  LeftHand: "hand_L",
+  RightShoulder: "shoulder_R",
+  RightArm: "upper_arm_R",
+  RightForeArm: "forearm_R",
+  RightHand: "hand_R",
+  LeftUpLeg: "hip_L",
+  LeftLeg: "thigh_L",
+  LeftFoot: "shin_L",
+  LeftToeBase: "foot_L",
+  RightUpLeg: "hip_R",
+  RightLeg: "thigh_R",
+  RightFoot: "shin_R",
+  RightToeBase: "foot_R",
+};
 
 type BoneRotation = [number, number, number];
 type AnimationFrame = Record<string, BoneRotation>;
@@ -170,6 +221,7 @@ function createBodyPartMesh(boneName: string): THREE.Mesh | null {
 
   const material = new THREE.MeshPhongMaterial({
     color: config.color ?? 0x4488ff,
+    flatShading: true,
     transparent: true,
     opacity: 0.95,
   });
@@ -179,6 +231,46 @@ function createBodyPartMesh(boneName: string): THREE.Mesh | null {
   if (config.rotation) mesh.rotation.set(...config.rotation);
 
   return mesh;
+}
+
+// Sword mesh: handle + crossguard + blade + pommel, extending along +X from hand_R
+// The right arm extends along +X, so the blade points in the same direction as the arm.
+function createSwordMesh(): THREE.Group {
+  const sword = new THREE.Group();
+
+  // Pommel (gold, at base of grip)
+  const pommel = new THREE.Mesh(
+    new THREE.SphereGeometry(0.018, 8, 8),
+    new THREE.MeshPhongMaterial({ color: 0xc8a000, shininess: 120 }),
+  );
+  pommel.position.set(-0.022, 0, 0);
+  sword.add(pommel);
+
+  // Handle / grip (brown leather)
+  const handle = new THREE.Mesh(
+    new THREE.BoxGeometry(0.12, 0.024, 0.024),
+    new THREE.MeshPhongMaterial({ color: 0x6b3a1f }),
+  );
+  handle.position.set(0.038, 0, 0);
+  sword.add(handle);
+
+  // Crossguard (gold bar perpendicular to blade)
+  const guard = new THREE.Mesh(
+    new THREE.BoxGeometry(0.030, 0.16, 0.020),
+    new THREE.MeshPhongMaterial({ color: 0xc8a000, shininess: 120 }),
+  );
+  guard.position.set(0.100, 0, 0);
+  sword.add(guard);
+
+  // Blade (steel, extends from guard toward tip)
+  const blade = new THREE.Mesh(
+    new THREE.BoxGeometry(0.46, 0.022, 0.009),
+    new THREE.MeshPhongMaterial({ color: 0xd4d4d8, shininess: 220 }),
+  );
+  blade.position.set(0.330, 0, 0);
+  sword.add(blade);
+
+  return sword;
 }
 
 // Sample skeleton data - a simple humanoid rig
@@ -307,6 +399,70 @@ const IDLE_ANIMATION: Animation = {
   ],
 };
 
+// Sword swing: right-handed overhead slash in 6 keyframes, 1.0 second
+//
+// Verified sign conventions (child bone sits along parent's local +X):
+//   shoulder_R.z  POSITIVE → arm rises (+Y)   NEGATIVE → arm drops (-Y)
+//   shoulder_R.y  POSITIVE → arm sweeps BACK (-Z)   NEGATIVE → arm drives FORWARD (+Z)
+//   chest.y       POSITIVE → right shoulder coils BACK   NEGATIVE → right shoulder drives FORWARD
+//   (rotation.x on these bones rolls around the arm axis — no positional effect on the child)
+//
+// The arc: guard → arm rises + goes back (wind-up) → arm drops + drives forward (strike)
+// Both z and y are on shoulder_R so the whole arm lifts, not just the elbow.
+const SWORD_SWING_ANIMATION: Animation = {
+  name: "Sword",
+  duration: 1.0,
+  frames: [
+    // Frame 0: Guard — arm raised and slightly forward
+    {
+      shoulder_R: [0, -0.2, 0.5],
+      upper_arm_L: [0, 0, 0.2],
+      forearm_L: [0, 0, 0.1],
+    },
+    // Frame 1: Wind-up begins — arm rises and sweeps back, body starts coiling
+    {
+      chest: [0, 0.3, 0],
+      spine: [0, 0.1, 0],
+      shoulder_R: [0, 0.4, 0.9],
+      upper_arm_R: [0, 0, 0.3],
+      shoulder_L: [0, 0.2, 0],
+      upper_arm_L: [0, 0, 0.3],
+    },
+    // Frame 2: Full wind-up — arm fully overhead and behind, body fully coiled
+    {
+      chest: [0, 0.55, 0],
+      spine: [0.05, 0.2, 0],
+      shoulder_R: [0, 0.7, 1.4],
+      upper_arm_R: [0, 0, 0.4],
+      shoulder_L: [0, 0.3, 0],
+      upper_arm_L: [0, 0, 0.4],
+      thigh_L: [0.05, 0, 0],
+      thigh_R: [-0.05, 0, 0],
+    },
+    // Frame 3: Strike — arm drops and drives forward, body unwinds
+    {
+      chest: [0, -0.35, 0],
+      spine: [-0.05, -0.15, 0],
+      shoulder_R: [0, -0.6, -0.4],
+      upper_arm_R: [0, 0, 0.1],
+      shoulder_L: [0, -0.3, 0],
+      upper_arm_L: [0, 0, -0.1],
+    },
+    // Frame 4: Follow-through — arm continues down and forward past impact
+    {
+      chest: [0, -0.25, 0],
+      spine: [0, -0.1, 0],
+      shoulder_R: [0, -0.5, -0.7],
+      shoulder_L: [0, -0.2, 0],
+    },
+    // Frame 5: Recovery — arm lifts back toward guard
+    {
+      shoulder_R: [0, -0.2, 0.3],
+      upper_arm_L: [0, 0, 0.1],
+    },
+  ],
+};
+
 export default function SkeletonViewer() {
   const mountRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -316,6 +472,8 @@ export default function SkeletonViewer() {
   const [currentFrame, setCurrentFrame] = useState(0);
   const [currentVariant, setCurrentVariant] = useState(1); // 0=tall, 1=normal, 2=short
 
+  const [pixelArtMode, setPixelArtMode] = useState(false);
+
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -324,6 +482,13 @@ export default function SkeletonViewer() {
   const skeletonMeshesRef = useRef<THREE.Mesh[]>([]);
   const animationTimeRef = useRef(0);
   const currentVariantRef = useRef(1);
+  const currentAnimationRef = useRef("Walk");
+  const fbxMixerRef = useRef<THREE.AnimationMixer | null>(null);
+  const fbxModelRef = useRef<THREE.Group | null>(null);
+  const fbxBonesRef = useRef<Map<string, THREE.Bone>>(new Map());
+  const customCharGroupRef = useRef<THREE.Group | null>(null);
+  const clockRef = useRef(new THREE.Clock());
+  const pixelArtModeRef = useRef(false);
 
   // Camera positions for 4 directions (Front, Right, Back, Left)
   const DIRECTIONS = [
@@ -584,6 +749,7 @@ export default function SkeletonViewer() {
     // Build skeleton
     const boneObjects: Record<string, THREE.Object3D> = {};
     const boneMeshes = new THREE.Group();
+    customCharGroupRef.current = boneMeshes;
     const skeletonMeshes: THREE.Mesh[] = [];
     const bodyMeshes: THREE.Mesh[] = [];
     scene.add(boneMeshes);
@@ -620,6 +786,18 @@ export default function SkeletonViewer() {
         boneMeshes.add(bone);
       }
     });
+
+    // Attach sword to right hand — blade extends along +X (same as arm direction)
+    const handRBone = boneObjects["hand_R"];
+    if (handRBone) {
+      const sword = createSwordMesh();
+      // Rotate 90° around Z so blade points upward (+Y) instead of along the arm (+X)
+      sword.rotation.z = Math.PI / 2;
+      handRBone.add(sword);
+      sword.traverse((child) => {
+        if (child instanceof THREE.Mesh) bodyMeshes.push(child);
+      });
+    }
 
     // Store mesh refs for visibility toggling
     bodyMeshesRef.current = bodyMeshes;
@@ -658,47 +836,77 @@ export default function SkeletonViewer() {
     function animate() {
       animationId = requestAnimationFrame(animate);
 
-      animationTimeRef.current += 0.016; // ~60fps
+      const delta = clockRef.current.getDelta();
+      const curAnim = currentAnimationRef.current;
 
-      const anim =
-        currentAnimation === "Walk" ? WALK_ANIMATION : IDLE_ANIMATION;
-      const frameIndex =
-        Math.floor(
-          (animationTimeRef.current / anim.duration) * anim.frames.length,
-        ) % anim.frames.length;
-      setCurrentFrame(frameIndex);
-
-      const frame = anim.frames[frameIndex];
-      if (!frame) return;
-
-      // Reset all rotations
-      Object.values(boneObjects).forEach((bone) => {
-        bone.rotation.set(0, 0, 0);
-      });
-
-      // Apply frame rotations
-      Object.entries(frame).forEach(([boneName, rotation]) => {
-        const bone = boneObjects[boneName];
-        if (bone) {
-          bone.rotation.set(rotation[0], rotation[1], rotation[2]);
-        }
-      });
-
-      // Apply body variant scale to skeleton, but counter-scale body meshes
-      const variant = BODY_VARIANTS[currentVariantRef.current];
-      const rootBone = boneObjects["root"];
-      if (variant && rootBone) {
-        rootBone.scale.set(variant.scaleXZ, variant.scaleY, variant.scaleXZ);
-        camera.position.y = variant.cameraY;
-        camera.lookAt(0, variant.cameraY - 0.5, 0);
-
-        // Counter-scale body meshes so they keep original size
-        const invScaleX = 1 / variant.scaleXZ;
-        const invScaleY = 1 / variant.scaleY;
-        const invScaleZ = 1 / variant.scaleXZ;
-        bodyMeshesRef.current.forEach((mesh) => {
-          mesh.scale.set(invScaleX, invScaleY, invScaleZ);
+      if (curAnim === "FBX" && fbxMixerRef.current) {
+        fbxMixerRef.current.update(delta);
+        // Retarget FBX bone rotations onto the custom character skeleton
+        Object.values(boneObjects).forEach((bone) => bone.rotation.set(0, 0, 0));
+        fbxBonesRef.current.forEach((fbxBone, fbxBoneName) => {
+          const customBoneName = FBX_BONE_MAP[fbxBoneName];
+          if (customBoneName) {
+            const customBone = boneObjects[customBoneName];
+            if (customBone) customBone.quaternion.copy(fbxBone.quaternion);
+          }
         });
+      } else {
+        animationTimeRef.current += delta;
+
+        const anim =
+          curAnim === "Walk"
+            ? WALK_ANIMATION
+            : curAnim === "Sword"
+              ? SWORD_SWING_ANIMATION
+              : IDLE_ANIMATION;
+
+        const rawIndex =
+          (animationTimeRef.current / anim.duration) * anim.frames.length;
+        const frameIndex = Math.floor(rawIndex) % anim.frames.length;
+        const nextIndex = (frameIndex + 1) % anim.frames.length;
+        const t = rawIndex % 1;
+        setCurrentFrame(frameIndex);
+
+        const frame = anim.frames[frameIndex];
+        const nextFrame = anim.frames[nextIndex];
+        if (frame && nextFrame) {
+          Object.values(boneObjects).forEach((bone) => {
+            bone.rotation.set(0, 0, 0);
+          });
+
+          const boneNames = new Set([
+            ...Object.keys(frame),
+            ...Object.keys(nextFrame),
+          ]);
+          boneNames.forEach((boneName) => {
+            const bone = boneObjects[boneName];
+            if (bone) {
+              const r0 = frame[boneName] ?? ([0, 0, 0] as BoneRotation);
+              const r1 = nextFrame[boneName] ?? ([0, 0, 0] as BoneRotation);
+              bone.rotation.set(
+                r0[0] + (r1[0] - r0[0]) * t,
+                r0[1] + (r1[1] - r0[1]) * t,
+                r0[2] + (r1[2] - r0[2]) * t,
+              );
+            }
+          });
+        }
+
+        // Apply body variant scale to skeleton, but counter-scale body meshes
+        const variant = BODY_VARIANTS[currentVariantRef.current];
+        const rootBone = boneObjects["root"];
+        if (variant && rootBone) {
+          rootBone.scale.set(variant.scaleXZ, variant.scaleY, variant.scaleXZ);
+          camera.position.y = variant.cameraY;
+          camera.lookAt(0, variant.cameraY - 0.5, 0);
+
+          const invScaleX = 1 / variant.scaleXZ;
+          const invScaleY = 1 / variant.scaleY;
+          const invScaleZ = 1 / variant.scaleXZ;
+          bodyMeshesRef.current.forEach((mesh) => {
+            mesh.scale.set(invScaleX, invScaleY, invScaleZ);
+          });
+        }
       }
 
       renderer.render(scene, camera);
@@ -726,12 +934,68 @@ export default function SkeletonViewer() {
       mount.removeChild(renderer.domElement);
       renderer.dispose();
     };
-  }, [currentAnimation]);
+  }, []);
 
   // Sync variant ref with state (avoids rebuilding scene on variant change)
   useEffect(() => {
     currentVariantRef.current = currentVariant;
   }, [currentVariant]);
+
+  // Sync animation ref — custom char is always visible, FBX model stays hidden
+  useEffect(() => {
+    currentAnimationRef.current = currentAnimation;
+    animationTimeRef.current = 0;
+    if (customCharGroupRef.current) customCharGroupRef.current.visible = true;
+    if (fbxModelRef.current) fbxModelRef.current.visible = false;
+  }, [currentAnimation]);
+
+  // Load FBX file once the scene is ready
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    const loader = new FBXLoader();
+    loader.load(
+      "/motion.fbx",
+      (fbx) => {
+        // FBX files are often in centimeters — scale to meters
+        fbx.scale.setScalar(0.01);
+        fbx.visible = false; // we drive the custom char, not this mesh
+        scene.add(fbx);
+        fbxModelRef.current = fbx;
+
+        // Collect all named nodes for retargeting (motion FBX may use Object3D, not THREE.Bone)
+        fbxBonesRef.current.clear();
+        fbx.traverse((obj) => {
+          if (obj.name) {
+            fbxBonesRef.current.set(obj.name, obj as THREE.Bone);
+          }
+        });
+        const boneNames = [...fbxBonesRef.current.keys()];
+        console.log("FBX nodes found:", boneNames);
+        const mapped = boneNames.filter((n) => FBX_BONE_MAP[n]);
+        console.log("FBX nodes mapped to custom skeleton:", mapped);
+
+        if (fbx.animations.length > 0) {
+          const mixer = new THREE.AnimationMixer(fbx);
+          const clip = fbx.animations[0];
+          if (clip) mixer.clipAction(clip).play();
+          fbxMixerRef.current = mixer;
+        }
+      },
+      undefined,
+      (err) => console.error("FBX load error:", err),
+    );
+
+    return () => {
+      fbxMixerRef.current?.stopAllAction();
+      fbxMixerRef.current = null;
+      if (fbxModelRef.current) {
+        scene.remove(fbxModelRef.current);
+        fbxModelRef.current = null;
+      }
+    };
+  }, []);
 
   // Separate effect to handle pixel view updates using offscreen renderer
   useEffect(() => {
@@ -805,6 +1069,27 @@ export default function SkeletonViewer() {
     skeletonMeshesRef.current.forEach((m) => (m.visible = !showSkin));
   }, [showSkin]);
 
+  // Pixel art mode: render at low resolution, scale up with CSS pixelated
+  useEffect(() => {
+    pixelArtModeRef.current = pixelArtMode;
+    const renderer = rendererRef.current;
+    const mount = mountRef.current;
+    if (!renderer || !mount) return;
+    const w = mount.clientWidth;
+    const h = mount.clientHeight;
+    if (pixelArtMode) {
+      renderer.setSize(Math.floor(w / 6), Math.floor(h / 6));
+      renderer.domElement.style.imageRendering = "pixelated";
+      renderer.domElement.style.width = `${w}px`;
+      renderer.domElement.style.height = `${h}px`;
+    } else {
+      renderer.setSize(w, h);
+      renderer.domElement.style.imageRendering = "";
+      renderer.domElement.style.width = "";
+      renderer.domElement.style.height = "";
+    }
+  }, [pixelArtMode]);
+
   return (
     <div className="w-full h-screen relative bg-gray-900 text-white overflow-hidden">
       {/* Main 3D canvas - takes full screen */}
@@ -857,6 +1142,29 @@ export default function SkeletonViewer() {
           >
             Idle
           </button>
+          <button
+            onClick={() => {
+              setCurrentAnimation("Sword");
+              animationTimeRef.current = 0;
+            }}
+            className={`px-3 py-1 rounded text-sm ${
+              currentAnimation === "Sword"
+                ? "bg-blue-600"
+                : "bg-gray-600 hover:bg-gray-500"
+            }`}
+          >
+            Sword
+          </button>
+          <button
+            onClick={() => setCurrentAnimation("FBX")}
+            className={`px-3 py-1 rounded text-sm ${
+              currentAnimation === "FBX"
+                ? "bg-orange-600"
+                : "bg-gray-600 hover:bg-gray-500"
+            }`}
+          >
+            Motion FBX
+          </button>
           <span className="text-xs text-gray-400 self-center ml-2">
             Frame: {currentFrame}
           </span>
@@ -899,6 +1207,14 @@ export default function SkeletonViewer() {
               onChange={(e) => setShowPixelView(e.target.checked)}
             />
             Pixel View
+          </label>
+          <label className="flex items-center gap-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={pixelArtMode}
+              onChange={(e) => setPixelArtMode(e.target.checked)}
+            />
+            Pixel Art
           </label>
         </div>
       </div>
