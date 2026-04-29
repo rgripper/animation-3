@@ -10,17 +10,18 @@ export const COLORS: Record<string, number> = {
 };
 
 export const JOINT_COLOR = 0xff8800;
-export const JOINT_RADIUS = 0.028;
+// All radii below are in METRES (world space). boneVisuals.ts converts them
+// to FBX local space (centimetres) before creating Three.js geometry.
+export const JOINT_RADIUS = 0.040;
 
-// Capsule radius for each segment — intentionally thicker than anatomical for visibility
 export const RADII: Record<string, number> = {
-  Hips: 0.092,
+  Hips: 0.095,
   Spine: 0.082, Spine1: 0.082, Spine2: 0.090,
   Neck: 0.052,
-  LeftShoulder: 0.046, LeftArm: 0.056, LeftForeArm: 0.048,
-  RightShoulder: 0.046, RightArm: 0.056, RightForeArm: 0.048,
-  LeftUpLeg: 0.084, LeftLeg: 0.070, LeftFoot: 0.052,
-  RightUpLeg: 0.084, RightLeg: 0.070, RightFoot: 0.052,
+  LeftShoulder: 0.050, LeftArm: 0.062, LeftForeArm: 0.052,
+  RightShoulder: 0.050, RightArm: 0.062, RightForeArm: 0.052,
+  LeftUpLeg: 0.090, LeftLeg: 0.074, LeftFoot: 0.055,
+  RightUpLeg: 0.090, RightLeg: 0.074, RightFoot: 0.055,
 };
 
 // Bones from which we draw NO child segments (terminal visual nodes)
