@@ -3,8 +3,8 @@ import index from "./index.html";
 
 const server = serve({
   routes: {
-    "/motion.fbx": async () => {
-      const file = Bun.file("./20260317_203735980_2f11095c_000.fbx");
+    "/walking.fbx": async () => {
+      const file = Bun.file("./Walking.fbx");
       return new Response(file, {
         headers: { "Content-Type": "application/octet-stream" },
       });

@@ -10,7 +10,8 @@
       "Bash(node:*)",
       "Bash(git -C /workspaces/animation-3 log --oneline -10)",
       "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
-      "Bash(nvidia-smi)"
+      "Bash(nvidia-smi)",
+      "Bash(bun run *)"
     ]
   }
 }
