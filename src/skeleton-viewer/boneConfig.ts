@@ -30,17 +30,13 @@ export const NO_CHILD_SEGMENTS = new Set([
   "LeftToeBase", "RightToeBase",
 ]);
 
-// Bones skipped entirely — no joint, no segment (fingers, toe ends, head end)
+// Finger segment radius (metres) — thin regardless of which exact bones the FBX uses
+export const FINGER_RADIUS = 0.012;
+
+// Bones skipped entirely — only true end-nodes with no meaningful segment
 export const SKIP = new Set([
-  "LeftHandThumb1", "LeftHandThumb2", "LeftHandThumb3", "LeftHandThumb4",
-  "LeftHandIndex1", "LeftHandIndex2", "LeftHandIndex3", "LeftHandIndex4",
-  "LeftHandMiddle1", "LeftHandMiddle2", "LeftHandMiddle3", "LeftHandMiddle4",
-  "LeftHandRing1", "LeftHandRing2", "LeftHandRing3", "LeftHandRing4",
-  "LeftHandPinky1", "LeftHandPinky2", "LeftHandPinky3", "LeftHandPinky4",
-  "RightHandThumb1", "RightHandThumb2", "RightHandThumb3", "RightHandThumb4",
-  "RightHandIndex1", "RightHandIndex2", "RightHandIndex3", "RightHandIndex4",
-  "RightHandMiddle1", "RightHandMiddle2", "RightHandMiddle3", "RightHandMiddle4",
-  "RightHandRing1", "RightHandRing2", "RightHandRing3", "RightHandRing4",
-  "RightHandPinky1", "RightHandPinky2", "RightHandPinky3", "RightHandPinky4",
   "LeftToe_End", "RightToe_End", "HeadTop_End",
 ]);
+
+// Pattern that matches any finger / thumb bone by name (Mixamo naming convention)
+export const FINGER_PATTERN = /thumb|index|middle|ring|pinky/i;
