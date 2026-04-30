@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
-import { isBone, addVisuals } from "./boneVisuals";
+import { isBone, addVisuals, strip } from "./boneVisuals";
 import { PixelView } from "./PixelView";
 import { exportSpritesheet, SPRITE_DIRS } from "./spriteExport";
 
@@ -63,7 +63,21 @@ export function SkeletonViewer() {
         // are never mistaken for bone children during addVisuals()
         const bones: THREE.Object3D[] = [];
         fbx.traverse((obj) => { if (isBone(obj)) bones.push(obj); });
-        bones.forEach(addVisuals);
+
+        // Use LeftArm/RightArm (actual shoulder joints, not clavicle bases)
+        // so torso capsule diameter equals the real shoulder span.
+        let torsoRadius: number | undefined;
+        const lArm = bones.find(b => strip(b.name) === "LeftArm");
+        const rArm = bones.find(b => strip(b.name) === "RightArm");
+        if (lArm && rArm) {
+          const lPos = new THREE.Vector3();
+          const rPos = new THREE.Vector3();
+          lArm.getWorldPosition(lPos);
+          rArm.getWorldPosition(rPos);
+          torsoRadius = lPos.distanceTo(rPos) / 2; // half shoulder span = capsule radius
+        }
+
+        bones.forEach(b => addVisuals(b, torsoRadius));
 
         if (fbx.animations.length > 0) {
           const clip = fbx.animations[0]!;

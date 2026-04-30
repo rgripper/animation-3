@@ -62,10 +62,13 @@ function orientToward(localVec: THREE.Vector3): THREE.Quaternion {
   return new THREE.Quaternion().setFromUnitVectors(up, dir);
 }
 
+const TORSO_BONES = new Set(["Hips", "Spine", "Spine1", "Spine2"]);
+
 // Attach visual geometry to a single bone as child objects so they animate with it.
 // Must be called AFTER collecting all bones so newly added meshes are never
 // mistaken for bone children when filtering bone.children.
-export function addVisuals(bone: THREE.Object3D): void {
+// torsoRadius: if provided (in metres), overrides RADII for Hips/Spine bones.
+export function addVisuals(bone: THREE.Object3D, torsoRadius?: number): void {
   const name = strip(bone.name);
   if (SKIP.has(name)) return;
 
@@ -114,7 +117,8 @@ export function addVisuals(bone: THREE.Object3D): void {
   if (NO_CHILD_SEGMENTS.has(name)) return;
 
   const color = COLORS[name] ?? 0x44aaff;
-  const radius = (RADII[name] ?? 0.065) * FBX_TO_LOCAL; // metres → cm
+  const radiusM = TORSO_BONES.has(name) && torsoRadius != null ? torsoRadius : (RADII[name] ?? 0.065);
+  const radius = radiusM * FBX_TO_LOCAL; // metres → cm
   const mat = segmentMat(color);
 
   bone.children
