@@ -4,14 +4,17 @@ import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import { isBone, addVisuals, strip } from "./boneVisuals";
 import { PixelView } from "./PixelView";
 import { exportSpritesheet, SPRITE_DIRS } from "./spriteExport";
+import { generatePositionMaps, downloadPositionMapsAsPNG } from "./limbPositionMap";
 
 type Status = "loading" | "ready" | "error";
 
 export function SkeletonViewer() {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
   const clipRef = useRef<THREE.AnimationClip | null>(null);
+  const limbMeshesRef = useRef<Map<string, THREE.Mesh[]>>(new Map());
 
   const [status, setStatus] = useState<Status>("loading");
   const [showPixel, setShowPixel] = useState(false);
@@ -39,6 +42,7 @@ export function SkeletonViewer() {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(mount.clientWidth, mount.clientHeight);
     mount.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
 
     // Lighting
     scene.add(new THREE.AmbientLight(0xffffff, 0.40));
@@ -78,6 +82,17 @@ export function SkeletonViewer() {
         }
 
         bones.forEach(b => addVisuals(b, torsoRadius));
+
+        // Collect limb meshes by bone name (after addVisuals so children are populated).
+        // Exclude joint-dot spheres (isJoint) — they overlap adjacent limbs.
+        const limbs = new Map<string, THREE.Mesh[]>();
+        bones.forEach(bone => {
+          const meshes = bone.children.filter(
+            c => c instanceof THREE.Mesh && !c.userData.isJoint,
+          ) as THREE.Mesh[];
+          if (meshes.length > 0) limbs.set(strip(bone.name), meshes);
+        });
+        limbMeshesRef.current = limbs;
 
         if (fbx.animations.length > 0) {
           const clip = fbx.animations[0]!;
@@ -132,6 +147,13 @@ export function SkeletonViewer() {
     if (scene && mixer && clip) exportSpritesheet(scene, mixer, clip);
   }
 
+  function handleExportPositionMap() {
+    const renderer = rendererRef.current;
+    const limbs = limbMeshesRef.current;
+    if (!renderer || limbs.size === 0) return;
+    downloadPositionMapsAsPNG(generatePositionMaps(renderer, limbs, 64));
+  }
+
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative", background: "#16161e" }}>
       <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
@@ -161,6 +183,9 @@ export function SkeletonViewer() {
           </div>
           <button onClick={handleExport} style={exportBtnStyle}>
             Export Spritesheet
+          </button>
+          <button onClick={handleExportPositionMap} style={exportBtnStyle}>
+            Export Position Maps
           </button>
         </div>
       )}

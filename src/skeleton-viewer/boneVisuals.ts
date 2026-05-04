@@ -97,7 +97,9 @@ export function addVisuals(bone: THREE.Object3D, torsoRadius?: number): void {
 
   // Joint dot — radius in metres, converted to FBX local space (cm)
   const jointR = JOINT_RADIUS * FBX_TO_LOCAL;
-  bone.add(new THREE.Mesh(new THREE.SphereGeometry(jointR, 8, 8), JOINT_MAT));
+  const jointDot = new THREE.Mesh(new THREE.SphereGeometry(jointR, 8, 8), JOINT_MAT);
+  jointDot.userData.isJoint = true; // excluded from position maps (overlaps adjacent limbs)
+  bone.add(jointDot);
 
   if (name === "Head") {
     const r = 0.13 * FBX_TO_LOCAL;
