@@ -113,11 +113,12 @@ export function SkeletonViewer() {
     );
 
     // ── Render loop ────────────────────────────────────────────────────────
-    const clock = new THREE.Clock();
+    const timer = new THREE.Timer();
     let rafId: number;
     const loop = () => {
       rafId = requestAnimationFrame(loop);
-      mixerRef.current?.update(clock.getDelta());
+      timer.update();
+      mixerRef.current?.update(timer.getDelta());
       renderer.render(scene, camera);
     };
     loop();
